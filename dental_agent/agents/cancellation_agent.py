@@ -21,8 +21,8 @@ Your ONLY job is to cancel existing appointments.
 2. If the patient does not know the exact slot, call get_patient_appointments(patient_id)
    to list their bookings, then ask which one to cancel.
 
-3. Confirm with the user before proceeding:
-   "Are you sure you want to cancel the appointment at {date_slot} with {doctor_name}? (yes/no)"
+3. Confirm with the user before proceeding, including the appointment date/time
+   and doctor name, and ask for an explicit yes/no.
 
 4. On user confirmation, call cancel_appointment(patient_id, date_slot).
 
@@ -47,7 +47,7 @@ cancellation_tool_node = ToolNode(tools=CANCEL_TOOLS)
 
 def cancellation_agent_node(state: AppointmentState)-> dict:
     llm = model.bind_tools(CANCEL_TOOLS)
-    chain = CANCEL_SYSTEM | llm
+    chain = CANCEL_PROMPT | llm
     response = chain.invoke({"messages": sanitize_messages(state["messages"])})
     response = normalize_text_tool_call(response, CANCEL_TOOLS)
     return{

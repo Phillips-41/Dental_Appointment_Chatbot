@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
-
+import uuid
 from langchain_core.messages import HumanMessage, AIMessage
 from dental_agent.workflow.graph import dental_graph
 
@@ -19,7 +19,7 @@ Examples:
 
 Type 'quit' or 'exit' to leave.
 """
-
+ANSWER_NODES = {"info_agent", "booking_agent", "cancellation_agent", "rescheduling_agent"}
 def message_text(content):
     if isinstance(content, str):
         return content
@@ -37,6 +37,12 @@ def run():
 
     # This list is the conversation history we keep between turns.
     # We only store HumanMessage + AIMessage (final answers).
+
+    thread_id = str(uuid.uuid4())
+    config ={
+        "configurable": {"thread_id":thread_id},
+        "recursion_limit":25
+    }
     history = []
 
     while True:
@@ -60,12 +66,40 @@ def run():
 
         final_state = None
         try:
-            for data in dental_graph.stream(
-                {"messages": history},
-                stream_mode="values",
-                config={"recursion_limit": 25},
+            for event_type, data in dental_graph.stream(
+                {"messages": history}, 
+                stream_mode=["messages", "values"], 
+                config=config,
             ):
-                final_state = data
+                if event_type == "messages":
+                    chunk, metadata = data
+                    if not isinstance(chunk, AIMessage):
+                       continue
+
+                    # 2. Skip chunk s that are tool calls
+                    if getattr(chunk, "tool_calls", None):
+                        continue
+
+                    # 3. Skip empty chunks (signature-only / no text)
+                    if not chunk.content:
+                        continue
+
+                    # 4. ---- THE KEY FIX ----
+                    #    Only stream chunks produced by final-answer agents,
+                    #    not the supervisor's routing JSON.
+                    node = (metadata or {}).get("langgraph_node", "")
+                    if node not in ANSWER_NODES:
+                        continue
+                    text = message_text(chunk.content)
+                    if not text:
+                        continue
+
+                    print(text, end="", flush=True)
+                        
+                elif event_type == "values":
+                    final_state = data
+                    
+            print() # Newline after text streaming ends
 
         except Exception as exc:
             print(f"\n[Error] {exc}")
@@ -85,7 +119,8 @@ def run():
             if last_ai:
                 history.append(last_ai)
                 answer = message_text(last_ai.content)
-                print(answer if answer else "(No text response generated)")
+                if not answer:
+                    print("(No text response generated)")
             else:
                 print("(No response generated)")
         else:

@@ -3459,7 +3459,7 @@ date_slot,specialization,doctor_name,is_available,patient_to_attend
 6/8/2026 15:30,oral_surgeon,robert martinez,FALSE,1000087
 6/8/2026 16:00,oral_surgeon,robert martinez,FALSE,1000069
 6/8/2026 16:30,oral_surgeon,robert martinez,FALSE,1000044
-7/8/2026 8:00,oral_surgeon,robert martinez,TRUE,
+7/8/2026 8:00,oral_surgeon,robert martinez,FALSE,987654
 7/8/2026 8:30,oral_surgeon,robert martinez,FALSE,1000051
 7/8/2026 9:00,oral_surgeon,robert martinez,FALSE,1000063
 7/8/2026 9:30,oral_surgeon,robert martinez,TRUE,

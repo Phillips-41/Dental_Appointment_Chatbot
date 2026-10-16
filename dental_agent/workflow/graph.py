@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import AIMessage
-
+from langgraph.checkpoint.memory import MemorySaver
 from dental_agent.model.state import AppointmentState
 from dental_agent.agents.supervisor import supervisor_node
 from dental_agent.agents.info_agent import info_agent_node, info_tool_node
@@ -88,6 +88,7 @@ def build_graph():
     )
     graph.add_edge("rescheduling_tools", "rescheduling_agent")
 
-    return graph.compile()
+    memory = MemorySaver()
+    return graph.compile(checkpointer=memory)
 
 dental_graph = build_graph()
