@@ -22,7 +22,8 @@ RESCHEDULE_TOOLS = [
     check_slot_availability,
     reschedule_appointment,
 ]
-
+import re
+from langchain_core.messages import AIMessage, HumanMessage
 RESCHEDULE_SYSTEM ="""You are the Rescheduling Agent for a dental management system.
 
 Your only job is to reschedule the existing booked slot to new time slot.
@@ -62,9 +63,102 @@ RESCHEDULE_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 rescheduling_tool_node = ToolNode(tools=RESCHEDULE_TOOLS)
+def _is_availability_request(text: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(available slots?|availability|free slots?|open slots?)\b",
+            text,
+            re.IGNORECASE,
+        )
+        or re.search(
+            r"\b(list|show|find)\b.*\bslots?\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
 
+
+def _requested_reschedule_doctor(messages) -> str:
+    for message in reversed(messages):
+        if not isinstance(message, HumanMessage):
+            continue
+
+        text = message.content
+        if not isinstance(text, str) or "reschedul" not in text.lower():
+            continue
+
+        match = re.search(
+            r"\bwith\s+(?:dr\.?\s+)?"
+            r"([A-Za-z]+(?:\s+[A-Za-z]+)?)"
+            r"(?=\s*(?:[?.!,]|$|\b(?:on|at|from|to)\b))",
+            text,
+            re.IGNORECASE,
+        )
+
+        if match:
+            return match.group(1).strip().lower()
+
+    return ""
 
 def rescheduling_agent_node(state: AppointmentState) -> dict:
+
+    messages = state["messages"]
+
+    latest_user_message = next(
+        (
+            message
+            for message in reversed(messages)
+            if isinstance(message, HumanMessage)
+        ),
+        None,
+    )
+
+    if (
+        latest_user_message
+        and isinstance(latest_user_message.content, str)
+        and _is_availability_request(latest_user_message.content)
+    ):
+        doctor_name = _requested_reschedule_doctor(messages)
+
+        tool_args = (
+            {"doctor_name": doctor_name}
+            if doctor_name
+            else {}
+        )
+
+        slots = get_available_slots.invoke(tool_args)
+
+        if slots:
+            choices = "\n".join(
+                f"{index}. {slot['date_slot']} — "
+                f"Dr. {slot['doctor_name'].title()} "
+                f"({slot['specialization']})"
+                for index, slot in enumerate(slots, start=1)
+            )
+
+            heading = (
+                f"Available slots with Dr. {doctor_name.title()}:"
+                if doctor_name
+                else "Here are the available appointment slots:"
+            )
+
+            content = (
+                f"{heading}\n\n{choices}\n\n"
+                "Please choose a slot. Your appointment has not been changed."
+            )
+        else:
+            content = (
+                f"No available slots were found for Dr. {doctor_name.title()}."
+                if doctor_name
+                else "No available appointment slots were found."
+            )
+
+        response = AIMessage(content=content)
+
+        return {
+            "messages": [response],
+            "final_response": content,
+        }
     llm = model.bind_tools(RESCHEDULE_TOOLS)
 
     chain = RESCHEDULE_PROMPT | llm

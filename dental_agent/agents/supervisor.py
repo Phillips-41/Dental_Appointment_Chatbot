@@ -5,7 +5,8 @@ from langchain_core.messages import AIMessage, HumanMessage
 from dental_agent.model.state import AppointmentState
 from dental_agent.config.setting import GEMINI_API_KEY, MODEL_NAME, TEMPERATURE,model
 from dental_agent.utils import sanitize_messages
-
+import re
+from langchain_core.messages import AIMessage, HumanMessage
 class SupervisorDecision(BaseModel):
     """Structured routing decision"""
     intent: str = Field(
@@ -58,18 +59,28 @@ def supervisor_node(state: AppointmentState) ->dict:
         previous_assistant_text = (
             previous_assistant.content if previous_assistant is not None else ""
         )
+        availability_request = re.search(
+            r"\b(available slots?|availability|free slots?|open slots?)\b",
+            latest_user_text,
+            re.IGNORECASE,
+        )
+
+        previous_reschedule = any(
+            isinstance(message, HumanMessage)
+            and isinstance(message.content, str)
+            and "reschedul" in message.content.lower()
+            for message in messages[:-1]
+        )
+
         if (
-            isinstance(latest_user_text, str)
-            and isinstance(previous_assistant_text, str)
+            availability_request
+            and previous_reschedule
             and "reschedul" in previous_assistant_text.lower()
-            and "doctor" in previous_assistant_text.lower()
-            and "?" in previous_assistant_text
-            and any(
-                phrase in latest_user_text.lower()
-                for phrase in ("book with ", "reschedule with ", "use dr. ", "use doctor ")
-            )
         ):
-            return {"intent": "reschedule", "next_agent": "rescheduling_agent"}
+            return {
+                "intent": "reschedule",
+                "next_agent": "rescheduling_agent",
+            }
 
     llm =  model.with_structured_output(SupervisorDecision)
 
