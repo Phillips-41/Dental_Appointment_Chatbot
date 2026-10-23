@@ -19,7 +19,7 @@ class SupervisorDecision(BaseModel):
     )
 
     reasoning: str = Field(
-        description= "Short explaination of the decision made by the supervisor agent"
+        description= "Short explanation of the decision made by the supervisor agent"
     )
 
 SUPERVISOR_SYSTEM = """You are the Supervisor of a dental appointment system.
@@ -68,14 +68,14 @@ def supervisor_node(state: AppointmentState) ->dict:
         previous_reschedule = any(
             isinstance(message, HumanMessage)
             and isinstance(message.content, str)
-            and "reschedul" in message.content.lower()
+            and "reschedule" in message.content.lower()
             for message in messages[:-1]
         )
 
         if (
             availability_request
             and previous_reschedule
-            and "reschedul" in previous_assistant_text.lower()
+            and "reschedule" in previous_assistant_text.lower()
         ):
             return {
                 "intent": "reschedule",

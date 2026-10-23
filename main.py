@@ -3,7 +3,9 @@ load_dotenv()
 import uuid
 from langchain_core.messages import HumanMessage, AIMessage
 from dental_agent.workflow.graph import dental_graph
-
+from langfuse import get_client
+from langfuse.langchain import CallbackHandler
+from langfuse import propagate_attributes
 BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
 ║          Dental Appointment Management System                ║
@@ -34,14 +36,20 @@ def message_text(content):
 
 def run():
     print(BANNER)
-
+    langfuse = get_client()
+    # Verify connection
+    if langfuse.auth_check():
+        print("Langfuse client is authenticated and ready!")
+    else:
+        print("Authentication failed. Please check your credentials and host.")
     # This list is the conversation history we keep between turns.
     # We only store HumanMessage + AIMessage (final answers).
-
+    langfuse_handler = CallbackHandler()
     thread_id = str(uuid.uuid4())
     config ={
         "configurable": {"thread_id":thread_id},
-        "recursion_limit":25
+        "recursion_limit":25,
+        "callbacks": [langfuse_handler]
     }
     history = []
 
@@ -66,38 +74,45 @@ def run():
 
         final_state = None
         try:
-            for event_type, data in dental_graph.stream(
-                {"messages": history}, 
-                stream_mode=["messages", "values"], 
-                config=config,
+            with propagate_attributes(
+                    trace_name="Dental Appointment Management System",
+                    user_id="user-123",
+                    session_id=thread_id,
+                    tags=["info_agent", "booking_agent", "cancellation_agent", "rescheduling_agent"],
+                    metadata={"example": "multi-agent", "route": "research"},
             ):
-                if event_type == "messages":
-                    chunk, metadata = data
-                    if not isinstance(chunk, AIMessage):
-                       continue
+                for event_type, data in dental_graph.stream(
+                    {"messages": history},
+                    stream_mode=["messages", "values"],
+                    config=config,
+                ):
+                    if event_type == "messages":
+                        chunk, metadata = data
+                        if not isinstance(chunk, AIMessage):
+                           continue
 
-                    # 2. Skip chunk s that are tool calls
-                    if getattr(chunk, "tool_calls", None):
-                        continue
+                        # 2. Skip chunk s that are tool calls
+                        if getattr(chunk, "tool_calls", None):
+                            continue
 
-                    # 3. Skip empty chunks (signature-only / no text)
-                    if not chunk.content:
-                        continue
+                        # 3. Skip empty chunks (signature-only / no text)
+                        if not chunk.content:
+                            continue
 
-                    # 4. ---- THE KEY FIX ----
-                    #    Only stream chunks produced by final-answer agents,
-                    #    not the supervisor's routing JSON.
-                    node = (metadata or {}).get("langgraph_node", "")
-                    if node not in ANSWER_NODES:
-                        continue
-                    text = message_text(chunk.content)
-                    if not text:
-                        continue
+                        # 4. ---- THE KEY FIX ----
+                        #    Only stream chunks produced by final-answer agents,
+                        #    not the supervisor's routing JSON.
+                        node = (metadata or {}).get("langgraph_node", "")
+                        if node not in ANSWER_NODES:
+                            continue
+                        text = message_text(chunk.content)
+                        if not text:
+                            continue
 
-                    print(text, end="", flush=True)
-                        
-                elif event_type == "values":
-                    final_state = data
+                        print(text, end="", flush=True)
+
+                    elif event_type == "values":
+                        final_state = data
                     
             print() # Newline after text streaming ends
 

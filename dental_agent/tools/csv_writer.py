@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 import pandas as pd
 from langchain_core.tools import tool
+from langfuse._client.observe import observe
 
 from dental_agent.config.setting import CSV_PATH
 from dental_agent.utils import format_slot
@@ -39,6 +40,7 @@ def _save_df(df: pd.DataFrame) -> None:
     out["is_available"] = out["is_available"].map({True: "TRUE", False: "FALSE"})
     out["patient_to_attend"] = out["patient_to_attend"].replace("nan","")
     out.to_csv(CSV_PATH, index=False)
+
 
 @tool
 def book_appointment(patient_id: str, doctor_name: str, date_slot: str)-> Dict[str, Any]:
@@ -128,6 +130,7 @@ def reschedule_appointment(
             f"to {new_date_slot} with {doctor_name}."
         ),
     }
+
 
 @tool
 def cancel_appointment(patient_id: str, date_slot: str) -> Dict[str, Any]:

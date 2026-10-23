@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 import pandas as pd
 from langchain_core.tools import tool
-
+from langfuse import observe
 from dental_agent.config.setting import CSV_PATH
 from dental_agent.utils import format_slot
 
