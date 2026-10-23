@@ -82,7 +82,9 @@ def supervisor_node(state: AppointmentState) ->dict:
                 "next_agent": "rescheduling_agent",
             }
 
-    llm =  model.with_structured_output(SupervisorDecision)
+    llm = model.with_structured_output(
+    SupervisorDecision,
+    method="function_calling",)
 
     chain = SUPERVISOR_PROMPT | llm
     decision : SupervisorDecision = chain.invoke(
