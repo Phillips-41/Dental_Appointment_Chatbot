@@ -41,28 +41,31 @@ Each specialist only has access to the tools it actually needs (principle of lea
 ---
 
 ## Project Structure
+
+```text
 Dental_Appointment_Chatbot/
 ├── main.py                          # CLI entry point + streaming
 ├── doctor_availability.csv          # Appointment data store
 ├── requirements.txt
 ├── .env                             # API keys (not committed)
 └── dental_agent/
-├── agents/
-│   ├── supervisor.py            # Intent classification & routing
-│   ├── info_agent.py            # Availability & lookups
-│   ├── booking_agent.py         # Create appointments
-│   ├── cancellation_agent.py    # Cancel appointments
-│   └── rescheduling_agent.py    # Move appointments
-├── config/
-│   └── setting.py               # LLM config & paths
-├── model/
-│   └── state.py                 # Shared graph state
-├── tools/
-│   ├── csv_reader.py            # Read operations
-│   └── csv_writer.py            # Write operations
-├── workflow/
-│   └── graph.py                 # LangGraph definition
-└── utils.py                     # Message sanitization helpers
+    ├── agents/
+    │   ├── supervisor.py         # Intent classification & routing
+    │   ├── info_agent.py         # Availability & lookups
+    │   ├── booking_agent.py      # Create appointments
+    │   ├── cancellation_agent.py # Cancel appointments
+    │   └── rescheduling_agent.py # Move appointments
+    ├── config/
+    │   └── setting.py            # LLM config & paths
+    ├── model/
+    │   └── state.py              # Shared graph state
+    ├── tools/
+    │   ├── csv_reader.py         # Read operations
+    │   └── csv_writer.py         # Write operations
+    ├── workflow/
+    │   └── graph.py              # LangGraph definition
+    └── utils.py                  # Message sanitization helpers
+```
 
 
 ---
@@ -98,11 +101,16 @@ source venv/bin/activate
 ```
 
 ### 3. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
+### 4. Configure your API key
 
+Add the credentials for your chosen provider to a `.env` file:
+
+```env
 # Choose the provider you want to use
 GEMINI_API_KEY=your_gemini_key
 # or
@@ -114,27 +122,31 @@ OPENAI_MODEL=gpt-4o-mini
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 LANGFUSE_HOST=https://cloud.langfuse.com
+```
 
-5. Run the chatbot
+### 5. Run the chatbot
+
 ```bash
 python main.py
 ```
 
+### Example Interactions
 
+- **Check availability:** “Show available slots for an orthodontist”
+- **Book an appointment:** “Book patient 1000082 with Emily Johnson on 5/10/2026 9:00”
+- **Look up a patient’s appointments:** “What appointments does patient 1000048 have?”
+- **Cancel:** “Cancel appointment for patient 1000082 at 5/10/2026 9:00”
+- **Reschedule:** “Reschedule patient 1000082 from 5/10/2026 9:00 to 5/12/2026 10:00”
 
-Example InteractionsCheck availability
-You: Show available slots for an orthodontistBook an appointmenttextYou: Book patient 1000082 with Emily Johnson on 5/10/2026 9:00Look up a patient’s appointments
-You: What appointments does patient 1000048 have?Cancel
-You: Cancel appointment for patient 1000082 at 5/10/2026 9:00Reschedule
-You: Reschedule patient 1000082 from 5/10/2026 9:00 to 5/12/2026 10:00
+### Available Specializations
 
-Available Specializations
-general_dentist
-oral_surgeon
-orthodontist
-cosmetic_dentist
-prosthodontist
-pediatric_dentist
-emergency_dentist
-Date format used throughout the system: M/D/YYYY H:MM
-Example: 5/10/2026 9:00
+- `general_dentist`
+- `oral_surgeon`
+- `orthodontist`
+- `cosmetic_dentist`
+- `prosthodontist`
+- `pediatric_dentist`
+- `emergency_dentist`
+
+Date format used throughout the system: `M/D/YYYY H:MM`  
+Example: `5/10/2026 9:00`
