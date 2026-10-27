@@ -1,0 +1,38 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	supervisor(supervisor)
+	info_agent(info_agent)
+	info_tools(info_tools)
+	booking_agent(booking_agent)
+	booking_tools(booking_tools)
+	cancellation_agent(cancellation_agent)
+	cancellation_tools(cancellation_tools)
+	rescheduling_agent(rescheduling_agent)
+	rescheduling_tools(rescheduling_tools)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> supervisor;
+	booking_agent -. &nbsp;end&nbsp; .-> __end__;
+	booking_agent -. &nbsp;tools&nbsp; .-> booking_tools;
+	booking_tools --> booking_agent;
+	cancellation_agent -. &nbsp;end&nbsp; .-> __end__;
+	cancellation_agent -. &nbsp;tools&nbsp; .-> cancellation_tools;
+	cancellation_tools --> cancellation_agent;
+	info_agent -. &nbsp;end&nbsp; .-> __end__;
+	info_agent -. &nbsp;tools&nbsp; .-> info_tools;
+	info_tools --> info_agent;
+	rescheduling_agent -. &nbsp;end&nbsp; .-> __end__;
+	rescheduling_agent -. &nbsp;tools&nbsp; .-> rescheduling_tools;
+	rescheduling_tools --> rescheduling_agent;
+	supervisor -. &nbsp;end&nbsp; .-> __end__;
+	supervisor -.-> booking_agent;
+	supervisor -.-> cancellation_agent;
+	supervisor -.-> info_agent;
+	supervisor -.-> rescheduling_agent;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
