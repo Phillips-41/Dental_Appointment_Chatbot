@@ -20,7 +20,7 @@ The system uses a **Supervisor** that routes each user request to the most appro
 
 ## Architecture & Agent Orchestration
 
-![Dental architecture diagram](dental_architecture.png)
+![Dental architecture diagram](dental_architecture.mmd)
 
 
 ### How the flow works
